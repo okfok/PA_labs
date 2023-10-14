@@ -70,8 +70,8 @@ void quickSort(int arr[], int start, int end) {
 void create_unsorted_file(std::string file_name) {
     std::ofstream file(file_name, std::ios::binary);
 
-    for (int i = 0; i < pow(2, 2) * 3; ++i) {
-        int num = pow(2, 2) * 3 - i;
+    for (int i = 0; i < 16; ++i) {
+        int num = 16 - i;
         file.write((char *) (&num), sizeof(num));
 
     }
@@ -107,7 +107,6 @@ void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bo
     std::fstream fin2(in2, std::fstream::in | std::ios::binary);
     std::ofstream fout(out, std::ios::binary);
 
-    pp();
 
     int num1, num2, n1 = 1, n2 = 1, last = 0;
     fin1.read((char *) &num1, sizeof(int));
@@ -189,11 +188,11 @@ void task(std::string file_name) {
     std::ofstream part1("1", std::ios::binary);
     std::ofstream part2("2", std::ios::binary);
 
-    int j = 1, p1 = 0, p2 = 0;
+    int j = 0, p1 = 0, p2 = 0;
     while (!file.eof()) {
-
-
-        for (int i = 0; i < fib(j) - ((j % 2) ? p1 : p2); ++i) {
+        j++;
+        int n = fib(j) - ((j % 2) ? p1 : p2);
+        for (int i = 0; i < n; ++i) {
 
 
             int nums[N];
@@ -203,57 +202,81 @@ void task(std::string file_name) {
 
             quickSort(nums, 0, N - 1);
 
-//            for(int num : nums){
-//                std::cout << num << ' ';
-//            }
             if (j % 2) {
-//                part1.write((char *) (&n), sizeof(n));
                 part1.write((char *) (&nums), sizeof(nums));
                 p1++;
             } else {
-//                part1.write((char *) (&n), sizeof(n));
                 part2.write((char *) (&nums), sizeof(nums));
                 p2++;
             }
 
 
         }
-        j++;
     }
 
     part1.close();
     part2.close();
     file.close();
 
-    std::cout << p1 << ' ' << p2 << '\n';
 
     int count[M] = {p1, p2, 0};
     int len[M] = {1, 1, 0};
 
     while (count[0] + count[1] + count[2] != 1) {
+        std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << '\n' << count[0] << ' ' << count[1] << ' '
+                  << count[2] << "\n++\n";
+        pp();
         if (count[0] == 0) {
-            throw;
+            int m = min(count[1], count[2]);
+            merge("2", "3", "1", m * len[1], m * len[2], len[1] < len[2]);
+            count[0] = min(count[1], count[2]);
+            len[0] = len[1] + len[2];
+
+            if (count[1] < count[2]) {
+                count[1] = abs(count[1] - count[2]);
+                count[2] = 0;
+                len[2] = 0;
+            } else {
+                count[2] = abs(count[1] - count[2]);
+                count[1] = 0;
+                len[1] = 0;
+            }
         } else if (count[1] == 0) {
-            throw;
+            int m = min(count[0], count[2]);
+            merge("1", "3", "2", m * len[0], m * len[2], len[0] < len[2]);
+            count[1] = min(count[0], count[2]);
+            len[1] = len[0] + len[2];
+
+            if (count[0] < count[2]) {
+                count[0] = abs(count[0] - count[2]);
+                count[2] = 0;
+                len[2] = 0;
+            } else {
+                count[2] = abs(count[0] - count[2]);
+                count[0] = 0;
+                len[0] = 0;
+            }
         } else if (count[2] == 0) {
             int m = min(count[0], count[1]);
             merge("1", "2", "3", m * len[0], m * len[1], len[0] < len[1]);
             count[2] = min(count[0], count[1]);
             len[2] = len[0] + len[1];
 
-            if (count[0] < count[1]){
+            if (count[0] < count[1]) {
                 count[0] = abs(count[0] - count[1]);
                 count[1] = 0;
                 len[1] = 0;
-            }else{
+            } else {
                 count[1] = abs(count[0] - count[1]);
                 count[0] = 0;
                 len[0] = 0;
             }
         } else
             throw;
-        pp();
     }
+    std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << '\n' << count[0] << ' ' << count[1] << ' '
+              << count[2] << "\n++\n";
+    pp();
 
 //    merge("1", "2", "3", min(p1, p2), min(p1, p2), p1 < p2);
 
@@ -264,12 +287,19 @@ void task(std::string file_name) {
 
 
 int main() {
+    std::ofstream f;
+    f.open("1", std::fstream::out | std::ios::binary | std::ios::trunc);
+    f.close();
+    f.open("2", std::fstream::out | std::ios::binary | std::ios::trunc);
+    f.close();
+    f.open("3", std::fstream::out | std::ios::binary | std::ios::trunc);
+    f.close();
+
     create_unsorted_file(INPUT_FILE_NAME);
     print_file(INPUT_FILE_NAME);
     task(INPUT_FILE_NAME);
 
     pp();
-
 
 
 //    for (int i = 1; i < 15; ++i) {
