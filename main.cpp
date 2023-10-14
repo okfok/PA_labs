@@ -227,22 +227,35 @@ void task(std::string file_name) {
 
     std::cout << p1 << ' ' << p2 << '\n';
 
-//    int count[M] = {p1, p2, 0};
-//    int len[M] = {1, , 0};
-//
-//    while (count[0] + count[1] + count[2] != 1) {
-//        if (count[0] == 0) {
-//
-//        } else if (count[1] == 0) {
-//
-//        } else if (count[2] == 0) {
-//            merge("1", "2", "3", count[0]*len[0], count[1] * len[1], len[0] < len[1]);
-//            count[2] = min(count[0], count[1]);
-//            len[2] = len[0] + len[1];
-//        }
-//    }
+    int count[M] = {p1, p2, 0};
+    int len[M] = {1, 1, 0};
 
-    merge("1", "2", "3", min(p1, p2), min(p1, p2), p1 < p2);
+    while (count[0] + count[1] + count[2] != 1) {
+        if (count[0] == 0) {
+            throw;
+        } else if (count[1] == 0) {
+            throw;
+        } else if (count[2] == 0) {
+            int m = min(count[0], count[1]);
+            merge("1", "2", "3", m * len[0], m * len[1], len[0] < len[1]);
+            count[2] = min(count[0], count[1]);
+            len[2] = len[0] + len[1];
+
+            if (count[0] < count[1]){
+                count[0] = abs(count[0] - count[1]);
+                count[1] = 0;
+                len[1] = 0;
+            }else{
+                count[1] = abs(count[0] - count[1]);
+                count[0] = 0;
+                len[0] = 0;
+            }
+        } else
+            throw;
+        pp();
+    }
+
+//    merge("1", "2", "3", min(p1, p2), min(p1, p2), p1 < p2);
 
 
 
