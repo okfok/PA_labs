@@ -70,8 +70,9 @@ void quickSort(int arr[], int start, int end) {
 void create_unsorted_file(std::string file_name) {
     std::ofstream file(file_name, std::ios::binary);
 
-    for (int i = 0; i < 16; ++i) {
-        int num = 16 - i;
+    for (int i = 0; i < 110; ++i) {
+        int num = 110 - i;
+        file.write((char *) (&num), sizeof(num));
         file.write((char *) (&num), sizeof(num));
 
     }
@@ -102,7 +103,7 @@ void pp() {
     print_file("3");
 }
 
-void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bool longer) {
+void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bool second_is_longer) {
     std::fstream fin1(in1, std::fstream::in | std::ios::binary);
     std::fstream fin2(in2, std::fstream::in | std::ios::binary);
     std::ofstream fout(out, std::ios::binary);
@@ -114,7 +115,7 @@ void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bo
 
 
     while (true) {
-        if ((last < num1 && num1 < num2) || (num1 < num2 && num2 < last) || (num2 < last && last < num1)) {
+        if ((last <= num1 && num1 < num2) || (num1 < num2 && num2 < last) || (num2 < last && last <= num1)) {
             fout.write((char *) (&num1), sizeof(int));
             last = num1;
             if (n1 < c1 * N) {
@@ -122,7 +123,7 @@ void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bo
                 n1++;
             } else
                 break;
-        } else { //if ((last < num2 && num2 < num1) || (num2 << num1 && num1 < last))
+        } else if ((last <= num2 && num2 < num1) || (num2 < num1 && num1 < last) || (num1 < last && last <= num2)) {
             fout.write((char *) (&num2), sizeof(int));
             last = num2;
             if (n2 < c2 * N) {
@@ -130,7 +131,8 @@ void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bo
                 n2++;
             } else
                 break;
-        }
+        } else
+            throw std::invalid_argument(std::to_string(last)+ " - " + std::to_string(num1) + " - " + std::to_string(num2));
 
 
     }
@@ -153,25 +155,31 @@ void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bo
     }
 
 
-    if (longer) {
+    if (second_is_longer) {
         fin1.close();
         fin1.open(in1, std::fstream::out | std::ios::binary);
         while (true) {
-            fin2.read((char *) &num2, sizeof(int));
+            if (last == num2)
+                fin2.read((char *) &num2, sizeof(int));
+
             if (fin2.eof())
                 break;
             fin1.write((char *) (&num2), sizeof(int));
+            fin2.read((char *) &num2, sizeof(int));
         }
         fin2.close();
-        fin2.open(in1, std::fstream::out | std::ios::binary | std::ios::trunc);
+        fin2.open(in2, std::fstream::out | std::ios::binary | std::ios::trunc);
     } else {
         fin2.close();
         fin2.open(in2, std::fstream::out | std::ios::binary);
         while (true) {
-            fin1.read((char *) &num1, sizeof(int));
+            if (last == num1)
+                fin1.read((char *) &num1, sizeof(int));
+
             if (fin1.eof())
                 break;
             fin2.write((char *) (&num1), sizeof(int));
+            fin1.read((char *) &num1, sizeof(int));
         }
         fin1.close();
         fin1.open(in1, std::fstream::out | std::ios::binary | std::ios::trunc);
@@ -228,57 +236,62 @@ void task(std::string file_name) {
                   << count[2] << "\n++\n";
         if (count[0] == 0) {
             int m = min(count[1], count[2]);
-            merge("2", "3", "1", m * len[1], m * len[2], len[1] < len[2]);
+            merge("2", "3", "1", m * len[1], m * len[2], count[1] < count[2]);
             count[0] = min(count[1], count[2]);
             len[0] = len[1] + len[2];
 
             if (count[1] < count[2]) {
                 count[1] = abs(count[1] - count[2]);
+                len[1] = len[2];
                 count[2] = 0;
                 len[2] = 0;
             } else {
                 count[2] = abs(count[1] - count[2]);
+                len[2] = len[1];
                 count[1] = 0;
                 len[1] = 0;
             }
         } else if (count[1] == 0) {
             int m = min(count[0], count[2]);
-            merge("1", "3", "2", m * len[0], m * len[2], len[0] < len[2]);
+            merge("1", "3", "2", m * len[0], m * len[2], count[0] < count[2]);
             count[1] = min(count[0], count[2]);
             len[1] = len[0] + len[2];
 
             if (count[0] < count[2]) {
                 count[0] = abs(count[0] - count[2]);
+                len[0] = len[2];
                 count[2] = 0;
                 len[2] = 0;
             } else {
                 count[2] = abs(count[0] - count[2]);
+                len[2] = len[0];
                 count[0] = 0;
                 len[0] = 0;
             }
         } else if (count[2] == 0) {
             int m = min(count[0], count[1]);
-            merge("1", "2", "3", m * len[0], m * len[1], len[0] < len[1]);
+            merge("1", "2", "3", m * len[0], m * len[1], count[0] < count[1]);
             count[2] = min(count[0], count[1]);
             len[2] = len[0] + len[1];
 
             if (count[0] < count[1]) {
                 count[0] = abs(count[0] - count[1]);
+                len[0] = len[1];
                 count[1] = 0;
                 len[1] = 0;
             } else {
                 count[1] = abs(count[0] - count[1]);
+                len[1] = len[0];
                 count[0] = 0;
                 len[0] = 0;
             }
         } else
-            throw;
+            throw std::invalid_argument("2");
     }
     pp();
     std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << '\n' << count[0] << ' ' << count[1] << ' '
               << count[2] << "\n++\n";
 
-//    merge("1", "2", "3", min(p1, p2), min(p1, p2), p1 < p2);
 
 
 
