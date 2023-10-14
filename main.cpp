@@ -157,10 +157,10 @@ void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bo
         fin1.close();
         fin1.open(in1, std::fstream::out | std::ios::binary);
         while (true) {
-            fin1.write((char *) (&num2), sizeof(int));
             fin2.read((char *) &num2, sizeof(int));
             if (fin2.eof())
                 break;
+            fin1.write((char *) (&num2), sizeof(int));
         }
         fin2.close();
         fin2.open(in1, std::fstream::out | std::ios::binary | std::ios::trunc);
@@ -168,10 +168,10 @@ void merge(std::string in1, std::string in2, std::string out, int c1, int c2, bo
         fin2.close();
         fin2.open(in2, std::fstream::out | std::ios::binary);
         while (true) {
-            fin2.write((char *) (&num1), sizeof(int));
             fin1.read((char *) &num1, sizeof(int));
             if (fin1.eof())
                 break;
+            fin2.write((char *) (&num1), sizeof(int));
         }
         fin1.close();
         fin1.open(in1, std::fstream::out | std::ios::binary | std::ios::trunc);
@@ -223,9 +223,9 @@ void task(std::string file_name) {
     int len[M] = {1, 1, 0};
 
     while (count[0] + count[1] + count[2] != 1) {
+        pp();
         std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << '\n' << count[0] << ' ' << count[1] << ' '
                   << count[2] << "\n++\n";
-        pp();
         if (count[0] == 0) {
             int m = min(count[1], count[2]);
             merge("2", "3", "1", m * len[1], m * len[2], len[1] < len[2]);
@@ -274,9 +274,9 @@ void task(std::string file_name) {
         } else
             throw;
     }
+    pp();
     std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << '\n' << count[0] << ' ' << count[1] << ' '
               << count[2] << "\n++\n";
-    pp();
 
 //    merge("1", "2", "3", min(p1, p2), min(p1, p2), p1 < p2);
 
