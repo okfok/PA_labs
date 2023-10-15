@@ -36,7 +36,7 @@ int pow(int x, int y) {
 const std::string INPUT_FILE_NAME = "data.bin";
 const std::string OUTPUT_FILE_NAME = "result.bin";
 const int M = 5;
-const int N = pow(2, 15);
+const int N = pow(2, 17);
 const char *TEMP_FILE_NAMES[] = {"1", "2", "3", "4", "5"};
 int count[M];
 int len[M] = {1, 1, 1, 1, 0};
@@ -95,7 +95,7 @@ void quickSort(int arr[], int start, int end) {
 
 void create_unsorted_file(std::string file_name) {
     std::ofstream file(file_name, std::ios::binary);
-    long long len = pow(2, 25);
+    long long len = pow(2, 17) * 1297;
     for (long long i = 0; i < len; ++i) {
         int num = rand();
         file.write((char *) (&num), sizeof(num));
@@ -357,31 +357,42 @@ void task(std::string file_name) {
     }
     std::ifstream input(file_name, std::ios::binary);
     std::ofstream temp_files[M - 1];
-    int j = 0;
     for (int i = 0; i < M - 1; ++i) {
         temp_files[i].open(TEMP_FILE_NAMES[i], std::ios::binary);
         count[i] = 0;
     }
 
+    int dist[M - 1] = {0, 0, 0, 1};
+
     while (!input.eof()) {
-        j++;
-        long long n = fib(j) - count[j % (M - 1)];
-        for (long long i = 0; i < n; ++i) {
+
+        int tmp = dist[3];
+        dist[3] = dist[2] + tmp;
+        dist[2] = dist[1] + tmp;
+        dist[1] = dist[0] + tmp;
+        dist[0] = tmp;
+
+        for (int j = 0; j < M - 1; ++j) {
+
+            long long n = dist[j] - count[j % (M - 1)];
+            for (long long i = 0; i < n; ++i) {
 
 
-            int nums[N];
-            input.read((char *) &nums, sizeof(nums));
-            if (input.eof())
-                break;
+                int nums[N];
+                input.read((char *) &nums, sizeof(nums));
+                if (input.eof())
+                    break;
 
-            quickSort(nums, 0, N - 1);
-
-
-            temp_files[j % (M - 1)].write((char *) (&nums), sizeof(nums));
-            count[j % (M - 1)]++;
+                quickSort(nums, 0, N - 1);
 
 
+                temp_files[j % (M - 1)].write((char *) (&nums), sizeof(nums));
+                count[j % (M - 1)]++;
+
+
+            }
         }
+
     }
 
 
@@ -439,10 +450,10 @@ void task(std::string file_name) {
 
 int main() {
 
-    for (int i = 1; i < 20; ++i) {
-        std::cout << fib(i) << ' ';
-    }
-
+//    for (int i = 1; i < 20; ++i) {
+//        std::cout << fib(i) << ' ';
+//    }
+//
     remove(OUTPUT_FILE_NAME.c_str());
 
     create_unsorted_file(INPUT_FILE_NAME);
@@ -458,6 +469,17 @@ int main() {
     std::cout << elapsed_seconds.count() << '\n';
 
 
+//    int dist[M - 1] = {0, 0, 0, 1};
+//
+//    for (int i = 0; i < 10; ++i) {
+//
+//        int tmp = dist[3];
+//        dist[3] = dist[2] + tmp;
+//        dist[2] = dist[1] + tmp;
+//        dist[1] = dist[0] + tmp;
+//        dist[0] = tmp;
+//        std::cout << dist[0] << ' ' << dist[1] << ' ' << dist[2] << ' ' << dist[3] << '\n';
+//    }
 //    print_file(OUTPUT_FILE_NAME);
 
 
