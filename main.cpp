@@ -161,6 +161,7 @@ void merge(int in_files[], int out_index) {
     }
 
 
+
     while (true) {
         int ibest = 0, imin = 0;
 
@@ -300,17 +301,17 @@ void merge(int in_files[], int out_index) {
             to_replace.push_back(i);
     }
 
-//    std::cout << "Empty: ";
-//    for (int i : empty) {
-//        std::cout << i << ' ';
-//    }
-//    std::cout << '\n';
-//
-//    std::cout << "Rep: ";
-//    for (int i : to_replace) {
-//        std::cout << i << ' ';
-//    }
-//    std::cout << '\n';
+    std::cout << "Empty: ";
+    for (int i : empty) {
+        std::cout << i << ' ';
+    }
+    std::cout << '\n';
+
+    std::cout << "Rep: ";
+    for (int i : to_replace) {
+        std::cout << i << ' ';
+    }
+    std::cout << '\n';
 
     while (!to_replace.empty()) {
         int i = to_replace[to_replace.size() - 1];
@@ -334,6 +335,9 @@ void merge(int in_files[], int out_index) {
         count[in_files[i]] = 0;
         len[in_files[i]] = 0;
 
+        files[i].close();
+        files[i].open(TEMP_FILE_NAMES[in_files[i]], std::fstream::out | std::ios::binary | std::ios::trunc);
+
         empty.push_back(i);
 
 //        std::cout << "++ " << i << " - " << j << "\n" << len[0] << ' ' << len[1] << ' ' << len[2] << ' ' << len[3]
@@ -342,6 +346,13 @@ void merge(int in_files[], int out_index) {
 //                  << count[2] << ' ' << count[3] << ' ' << count[4] << "\n++\n";
 
 
+    }
+
+    while (!empty.empty()) {
+        int j = empty[empty.size() - 1];
+        empty.pop_back();
+        files[j].close();
+        files[j].open(TEMP_FILE_NAMES[in_files[j]], std::fstream::out | std::ios::binary | std::ios::trunc);
     }
 
 //
