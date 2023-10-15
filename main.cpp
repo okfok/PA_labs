@@ -3,32 +3,23 @@
 #include <chrono>
 #include <vector>
 
-long long fib(long long n) {
-//    if (n <= 2)
-//        return 0;
-    if (n <= 4)
-        return 0;
-    else if (n <= 6)
-        return 1;
-    else {
-//        switch (n % 4) {
-//            case 0:
-//            case 3:
-//                return fib(n - 3) + fib(n - 4);
-//            case 1:
-//                return fib(n - 1) + fib(n - 4);
-//            case 2:
-//                return fib(n - 2) + fib(n - 4);
-//
-//        }
-        return fib(n - 1) + fib(n - 2) + fib(n - 3) + fib(n - 4) + fib(n - 5) + fib(n - 6);
-    }
-}
-
 int pow(int x, int y) {
     int res = 1;
     for (int i = 0; i < y; ++i) {
         res *= x;
+    }
+    return res;
+}
+
+bool dec(int mask, int num) {
+    return (mask % pow(2, num + 1)) / pow(2, num);
+}
+
+int unpow(int x, int y) {
+    int res = 0;
+    while (x != 1) {
+        x /= y;
+        res++;
     }
     return res;
 }
@@ -52,11 +43,9 @@ int partition(int arr[], int start, int end) {
             count++;
     }
 
-    // Giving pivot element its correct position
     int pivotIndex = start + count;
     std::swap(arr[pivotIndex], arr[start]);
 
-    // Sorting left and right parts of the pivot element
     int i = start, j = end;
 
     while (i < pivotIndex && j > pivotIndex) {
@@ -78,18 +67,11 @@ int partition(int arr[], int start, int end) {
 }
 
 void quickSort(int arr[], int start, int end) {
-
-    // base case
     if (start >= end)
         return;
 
-    // partitioning the array
     int p = partition(arr, start, end);
-
-    // Sorting the left part
     quickSort(arr, start, p - 1);
-
-    // Sorting the right part
     quickSort(arr, p + 1, end);
 }
 
@@ -103,46 +85,6 @@ void create_unsorted_file(std::string file_name) {
     }
 
     file.close();
-}
-
-void print_file(std::string file_name) {
-    std::ifstream file(file_name, std::ios::binary);
-
-    while (true) {
-        int num;
-        file.read((char *) &num, sizeof(num));
-        if (file.eof())
-            break;
-        std::cout << num << ' ';
-    }
-    std::cout << '\n';
-    file.close();
-}
-
-void pp() {
-    std::cout << "-------------1\n";
-    print_file("1");
-    std::cout << "-------------2\n";
-    print_file("2");
-    std::cout << "-------------3\n";
-    print_file("3");
-    std::cout << "-------------4\n";
-    print_file("4");
-    std::cout << "-------------5\n";
-    print_file("5");
-}
-
-bool dec(int mask, int num) {
-    return (mask % pow(2, num + 1)) / pow(2, num);
-}
-
-int unpow(int x, int y) {
-    int res = 0;
-    while (x != 1) {
-        x /= y;
-        res++;
-    }
-    return res;
 }
 
 void merge(int in_files[], int out_index) {
@@ -254,25 +196,11 @@ void merge(int in_files[], int out_index) {
             to_replace.push_back(i);
     }
 
-//    std::cout << "Empty: ";
-//    for (int i: empty) {
-//        std::cout << i << ' ';
-//    }
-//    std::cout << '\n';
-//
-//    std::cout << "Rep: ";
-//    for (int i: to_replace) {
-//        std::cout << i << ' ';
-//    }
-//    std::cout << '\n';
-
     while (!to_replace.empty()) {
         int i = to_replace[to_replace.size() - 1];
         to_replace.pop_back();
         int j = empty[empty.size() - 1];
         empty.pop_back();
-
-        std::cout << "[" << i << " -> " << j << "]\n";
 
         files[j].close();
         files[j].open(TEMP_FILE_NAMES[in_files[j]], std::fstream::out | std::ios::binary);
@@ -295,12 +223,6 @@ void merge(int in_files[], int out_index) {
 
         empty.push_back(i);
 
-//        std::cout << "++ " << i << " - " << j << "\n" << len[0] << ' ' << len[1] << ' ' << len[2] << ' ' << len[3]
-//                  << ' ' << len[4] << '\n'
-//                  << count[0] << ' ' << count[1] << ' '
-//                  << count[2] << ' ' << count[3] << ' ' << count[4] << "\n++\n";
-
-
     }
 
     while (!empty.empty()) {
@@ -309,37 +231,6 @@ void merge(int in_files[], int out_index) {
         files[j].close();
         files[j].open(TEMP_FILE_NAMES[in_files[j]], std::fstream::out | std::ios::binary | std::ios::trunc);
     }
-
-//
-//    if (second_is_longer) {
-//        fin1.close();
-//        fin1.open(in1, std::fstream::out | std::ios::binary);
-//        while (true) {
-//            if (last == num2)
-//                fin2.read((char *) &num2, sizeof(int));
-//
-//            if (fin2.ef_mask())
-//                break;
-//            fin1.write((char *) (&num2), sizeof(int));
-//            fin2.read((char *) &num2, sizeof(int));
-//        }
-//        fin2.close();
-//        fin2.open(in2, std::fstream::out | std::ios::binary | std::ios::trunc);
-//    } else {
-//        fin2.close();
-//        fin2.open(in2, std::fstream::out | std::ios::binary);
-//        while (true) {
-//            if (last == num1)
-//                fin1.read((char *) &num1, sizeof(int));
-//
-//            if (fin1.ef_mask())
-//                break;
-//            fin2.write((char *) (&num1), sizeof(int));
-//            fin1.read((char *) &num1, sizeof(int));
-//        }
-//        fin1.close();
-//        fin1.open(in1, std::fstream::out | std::ios::binary | std::ios::trunc);
-//    }
 
 
     for (auto &file: files) {
@@ -403,10 +294,6 @@ void task(std::string file_name) {
 
 
     while (count[0] + count[1] + count[2] + count[3] + count[4] != 1) {
-//        pp();
-        std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << ' ' << len[3] << ' ' << len[4] << '\n'
-                  << count[0] << ' ' << count[1] << ' '
-                  << count[2] << ' ' << count[3] << ' ' << count[4] << "\n++\n";
         if (count[0] == 0) {
             int a[4] = {4, 1, 2, 3};
             merge(a, 0);
@@ -426,9 +313,6 @@ void task(std::string file_name) {
         } else
             throw std::invalid_argument("2");
     }
-//    pp();
-//    std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << '\n' << count[0] << ' ' << count[1] << ' '
-//              << count[2] << "\n++\n";
 
     int res_ind;
     for (int i = 0; i < M; ++i) {
@@ -444,22 +328,13 @@ void task(std::string file_name) {
             remove(TEMP_FILE_NAMES[i]);
     }
 
-
 }
 
 
 int main() {
-
-//    for (int i = 1; i < 20; ++i) {
-//        std::cout << fib(i) << ' ';
-//    }
-//
     remove(OUTPUT_FILE_NAME.c_str());
-
     create_unsorted_file(INPUT_FILE_NAME);
-//    print_file(INPUT_FILE_NAME);
 
-    std::cout << '\n';
     auto start = std::chrono::system_clock::now();
     task(INPUT_FILE_NAME);
     auto end = std::chrono::system_clock::now();
@@ -467,22 +342,6 @@ int main() {
 
     std::chrono::duration<double> elapsed_seconds = end - start;
     std::cout << elapsed_seconds.count() << '\n';
-
-
-//    int dist[M - 1] = {0, 0, 0, 1};
-//
-//    for (int i = 0; i < 10; ++i) {
-//
-//        int tmp = dist[3];
-//        dist[3] = dist[2] + tmp;
-//        dist[2] = dist[1] + tmp;
-//        dist[1] = dist[0] + tmp;
-//        dist[0] = tmp;
-//        std::cout << dist[0] << ' ' << dist[1] << ' ' << dist[2] << ' ' << dist[3] << '\n';
-//    }
-//    print_file(OUTPUT_FILE_NAME);
-
-
 
 
 }
