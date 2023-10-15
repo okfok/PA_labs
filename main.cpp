@@ -3,21 +3,26 @@
 #include <chrono>
 #include <vector>
 
-const std::string INPUT_FILE_NAME = "data.bin";
-const std::string OUTPUT_FILE_NAME = "result.bin";
-const int M = 5;
-const int N = 2;
-const char *TEMP_FILE_NAMES[] = {"1", "2", "3", "4", "5"};
-int count[M];
-int len[M] = {1, 1, 1, 1, 0};
-
 long long fib(long long n) {
-    if (n <= 2)
-        return 0;
+//    if (n <= 2)
+//        return 0;
     if (n <= 4)
+        return 0;
+    else if (n <= 6)
         return 1;
-    else
-        return fib(n - 1) + fib(n - 2) + fib(n - 3) + fib(n - 4);
+    else {
+//        switch (n % 4) {
+//            case 0:
+//            case 3:
+//                return fib(n - 3) + fib(n - 4);
+//            case 1:
+//                return fib(n - 1) + fib(n - 4);
+//            case 2:
+//                return fib(n - 2) + fib(n - 4);
+//
+//        }
+        return fib(n - 1) + fib(n - 2) + fib(n - 3) + fib(n - 4) + fib(n - 5) + fib(n - 6);
+    }
 }
 
 int pow(int x, int y) {
@@ -28,8 +33,14 @@ int pow(int x, int y) {
     return res;
 }
 
+const std::string INPUT_FILE_NAME = "data.bin";
+const std::string OUTPUT_FILE_NAME = "result.bin";
+const int M = 5;
+const int N = pow(2, 15);
+const char *TEMP_FILE_NAMES[] = {"1", "2", "3", "4", "5"};
+int count[M];
+int len[M] = {1, 1, 1, 1, 0};
 
-inline long long min(int n1, int n2) { return (n1 < n2) ? n1 : n2; }
 
 int partition(int arr[], int start, int end) {
 
@@ -84,9 +95,9 @@ void quickSort(int arr[], int start, int end) {
 
 void create_unsorted_file(std::string file_name) {
     std::ofstream file(file_name, std::ios::binary);
-    long long len = 16;
+    long long len = pow(2, 25);
     for (long long i = 0; i < len; ++i) {
-        int num = len - i;
+        int num = rand();
         file.write((char *) (&num), sizeof(num));
 
     }
@@ -144,134 +155,76 @@ void merge(int in_files[], int out_index) {
     std::ofstream out(TEMP_FILE_NAMES[out_index], std::ios::binary);
 
 
-    int last = 0, nums[M - 1], used[M - 1], eof = 0;
+    int last = 0, nums[M - 1], used[M - 1], ef_mask = 0;
 
-    int seq_count = count[in_files[0]]; // TODO
-    for (int i = 1; i < M - 1; ++i) {
-        if (seq_count > count[in_files[i]])
+    int seq_count = INT_MAX;
+    for (int i = 0; i < M - 1; ++i) {
+        if (seq_count > count[in_files[i]] && count[in_files[i]] != 0)
             seq_count = count[in_files[i]];
     }
 
-    if (seq_count == 0)
-        seq_count = 1;
+    std::cout << "seq_count: " << seq_count << '\n';
 
     for (int i = 0; i < M - 1; ++i) {
         files[i].read((char *) &nums[i], sizeof(int));
         used[i] = 1;
     }
 
+    for (int iter = 0; iter < M - 2; ++iter) {
+        bool cont = false;
 
-
-    while (true) {
-        int ibest = 0, imin = 0;
-
-        for (int i = 0; i < M - 1; i++) {
-            if (last <= nums[i] && nums[i] < nums[ibest])
-                ibest = i;
-            if (nums[i] < nums[imin])
-                imin = i;
-        }
-
-        if (last <= nums[ibest]) {
-            out.write((char *) (&nums[ibest]), sizeof(int));
-            last = nums[ibest];
-            if (used[ibest] < seq_count * len[in_files[ibest]] * N) {
-                files[ibest].read((char *) &nums[ibest], sizeof(int));
-                used[ibest]++;
-            } else {
-                eof += pow(2, ibest);
-                break;
-            }
-        } else {
-            out.write((char *) (&nums[imin]), sizeof(int));
-            last = nums[imin];
-            if (used[imin] < seq_count * len[in_files[imin]] * N) {
-                files[imin].read((char *) &nums[imin], sizeof(int));
-                used[imin]++;
-            } else {
-                eof += pow(2, imin);
+        for (int i = 0; i < M - 1; ++i) {
+            if (!dec(ef_mask, i) && files[i].eof()) {
+                ef_mask += pow(2, i);
+                cont = true;
                 break;
             }
         }
 
+        if (cont)
+            continue;
+
+
+        while (true) {
+
+            int ibest = (dec(ef_mask, 0)) ? (((dec(ef_mask, 1)) ? 2 : 1)) : 0;
+            int imin = (dec(ef_mask, 0)) ? (((dec(ef_mask, 1)) ? 2 : 1)) : 0;
+
+            for (int i = 0; i < M - 1; i++) {
+                if (!dec(ef_mask, i)) {
+                    if (last <= nums[i] && nums[i] < nums[ibest])
+                        ibest = i;
+                    if (nums[i] < nums[imin])
+                        imin = i;
+                }
+            }
+
+            if (last <= nums[ibest]) {
+                out.write((char *) (&nums[ibest]), sizeof(int));
+                last = nums[ibest];
+                if (used[ibest] < seq_count * len[in_files[ibest]] * N) {
+                    files[ibest].read((char *) &nums[ibest], sizeof(int));
+                    used[ibest]++;
+                } else {
+                    ef_mask += pow(2, ibest);
+                    break;
+                }
+            } else {
+                out.write((char *) (&nums[imin]), sizeof(int));
+                last = nums[imin];
+                if (used[imin] < seq_count * len[in_files[imin]] * N) {
+                    files[imin].read((char *) &nums[imin], sizeof(int));
+                    used[imin]++;
+                } else {
+                    ef_mask += pow(2, imin);
+                    break;
+                }
+            }
+
+        }
     }
 
-    while (true) {
-
-        int ibest = (dec(eof, 0)) ? 1 : 0, imin = (dec(eof, 0)) ? 1 : 0;
-
-        for (int i = 0; i < M - 1; i++) {
-            if (!dec(eof, i)) {
-                if (last <= nums[i] && nums[i] < nums[ibest])
-                    ibest = i;
-                if (nums[i] < nums[imin])
-                    imin = i;
-            }
-        }
-
-        if (last <= nums[ibest]) {
-            out.write((char *) (&nums[ibest]), sizeof(int));
-            last = nums[ibest];
-            if (used[ibest] < seq_count * len[in_files[ibest]] * N) {
-                files[ibest].read((char *) &nums[ibest], sizeof(int));
-                used[ibest]++;
-            } else {
-                eof += pow(2, ibest);
-                break;
-            }
-        } else {
-            out.write((char *) (&nums[imin]), sizeof(int));
-            last = nums[imin];
-            if (used[imin] < seq_count * len[in_files[imin]] * N) {
-                files[imin].read((char *) &nums[imin], sizeof(int));
-                used[imin]++;
-            } else {
-                eof += pow(2, imin);
-                break;
-            }
-        }
-
-    }
-
-    while (true) {
-
-        int ibest = (dec(eof, 0)) ? (((dec(eof, 1)) ? 2 : 1)) : 0;
-        int imin = (dec(eof, 0)) ? (((dec(eof, 1)) ? 2 : 1)) : 0;
-
-        for (int i = 0; i < M - 1; i++) {
-            if (!dec(eof, i)) {
-                if (last <= nums[i] && nums[i] < nums[ibest])
-                    ibest = i;
-                if (nums[i] < nums[imin])
-                    imin = i;
-            }
-        }
-
-        if (last <= nums[ibest]) {
-            out.write((char *) (&nums[ibest]), sizeof(int));
-            last = nums[ibest];
-            if (used[ibest] < seq_count * len[in_files[ibest]] * N) {
-                files[ibest].read((char *) &nums[ibest], sizeof(int));
-                used[ibest]++;
-            } else {
-                eof += pow(2, ibest);
-                break;
-            }
-        } else {
-            out.write((char *) (&nums[imin]), sizeof(int));
-            last = nums[imin];
-            if (used[imin] < seq_count * len[in_files[imin]] * N) {
-                files[imin].read((char *) &nums[imin], sizeof(int));
-                used[imin]++;
-            } else {
-                eof += pow(2, imin);
-                break;
-            }
-        }
-
-    }
-
-    int left = unpow(15 - eof, 2);
+    int left = unpow(15 - ef_mask, 2);
 
     if (used[left] < seq_count * len[in_files[left]] * N) {
         for (long long i = 0; i <= seq_count * len[in_files[left]] * N - used[left]; ++i) {
@@ -301,17 +254,17 @@ void merge(int in_files[], int out_index) {
             to_replace.push_back(i);
     }
 
-    std::cout << "Empty: ";
-    for (int i : empty) {
-        std::cout << i << ' ';
-    }
-    std::cout << '\n';
-
-    std::cout << "Rep: ";
-    for (int i : to_replace) {
-        std::cout << i << ' ';
-    }
-    std::cout << '\n';
+//    std::cout << "Empty: ";
+//    for (int i: empty) {
+//        std::cout << i << ' ';
+//    }
+//    std::cout << '\n';
+//
+//    std::cout << "Rep: ";
+//    for (int i: to_replace) {
+//        std::cout << i << ' ';
+//    }
+//    std::cout << '\n';
 
     while (!to_replace.empty()) {
         int i = to_replace[to_replace.size() - 1];
@@ -319,15 +272,17 @@ void merge(int in_files[], int out_index) {
         int j = empty[empty.size() - 1];
         empty.pop_back();
 
+        std::cout << "[" << i << " -> " << j << "]\n";
+
         files[j].close();
         files[j].open(TEMP_FILE_NAMES[in_files[j]], std::fstream::out | std::ios::binary);
         files[i].seekp((seq_count * len[in_files[i]] * N) * sizeof(int), std::ios::beg);
         while (true) {
-            int nums[N];
-            files[i].read((char *) &nums, sizeof(nums));
+            int seq[N];
+            files[i].read((char *) &seq, sizeof(seq));
             if (files[i].eof())
                 break;
-            files[j].write((char *) (&nums), sizeof(nums));
+            files[j].write((char *) (&seq), sizeof(seq));
 
         }
         count[in_files[j]] = count[in_files[i]] - seq_count;
@@ -363,7 +318,7 @@ void merge(int in_files[], int out_index) {
 //            if (last == num2)
 //                fin2.read((char *) &num2, sizeof(int));
 //
-//            if (fin2.eof())
+//            if (fin2.ef_mask())
 //                break;
 //            fin1.write((char *) (&num2), sizeof(int));
 //            fin2.read((char *) &num2, sizeof(int));
@@ -377,7 +332,7 @@ void merge(int in_files[], int out_index) {
 //            if (last == num1)
 //                fin1.read((char *) &num1, sizeof(int));
 //
-//            if (fin1.eof())
+//            if (fin1.ef_mask())
 //                break;
 //            fin2.write((char *) (&num1), sizeof(int));
 //            fin1.read((char *) &num1, sizeof(int));
@@ -395,6 +350,11 @@ void merge(int in_files[], int out_index) {
 }
 
 void task(std::string file_name) {
+    std::ofstream f;
+    for (auto &file_name: TEMP_FILE_NAMES) {
+        f.open(file_name, std::fstream::out | std::ios::binary | std::ios::trunc);
+        f.close();
+    }
     std::ifstream input(file_name, std::ios::binary);
     std::ofstream temp_files[M - 1];
     int j = 0;
@@ -432,7 +392,7 @@ void task(std::string file_name) {
 
 
     while (count[0] + count[1] + count[2] + count[3] + count[4] != 1) {
-        pp();
+//        pp();
         std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << ' ' << len[3] << ' ' << len[4] << '\n'
                   << count[0] << ' ' << count[1] << ' '
                   << count[2] << ' ' << count[3] << ' ' << count[4] << "\n++\n";
@@ -478,27 +438,29 @@ void task(std::string file_name) {
 
 
 int main() {
-    std::ofstream f;
-    for (auto &file_name: TEMP_FILE_NAMES) {
-        f.open(file_name, std::fstream::out | std::ios::binary | std::ios::trunc);
-        f.close();
+
+    for (int i = 1; i < 20; ++i) {
+        std::cout << fib(i) << ' ';
     }
+
     remove(OUTPUT_FILE_NAME.c_str());
 
     create_unsorted_file(INPUT_FILE_NAME);
-    print_file(INPUT_FILE_NAME);
+//    print_file(INPUT_FILE_NAME);
 
+    std::cout << '\n';
     auto start = std::chrono::system_clock::now();
     task(INPUT_FILE_NAME);
     auto end = std::chrono::system_clock::now();
 
 
     std::chrono::duration<double> elapsed_seconds = end - start;
-    std::time_t end_time = std::chrono::system_clock::to_time_t(end);
-    std::cout << elapsed_seconds.count();
+    std::cout << elapsed_seconds.count() << '\n';
 
 
-    print_file(OUTPUT_FILE_NAME);
+//    print_file(OUTPUT_FILE_NAME);
+
+
 
 
 }
