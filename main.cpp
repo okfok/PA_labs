@@ -4,14 +4,16 @@
 #include <chrono>
 
 const std::string INPUT_FILE_NAME = "data.bin";
-const int M = 3;
-const long long N = pow(2, 16);
+const std::string OUTPUT_FILE_NAME = "result.bin";
+const int M = 5;
+const int N = pow(2, 16);
+const char *TEMP_FILE_NAMES[] = {"1", "2", "3", "4", "5"};
 
 long long fib(long long n) {
-    if (n <= 2)
+    if (n <= 4)
         return 1;
     else
-        return fib(n - 1) + fib(n - 2);
+        return fib(n - 1) + fib(n - 2) + fib(n - 3) + fib(n - 4);
 }
 
 
@@ -103,21 +105,26 @@ void pp() {
     print_file("3");
 }
 
-void merge(std::string in1, std::string in2, std::string out, long long c1, long long c2, bool second_is_longer) {
-    std::fstream fin1(in1, std::fstream::in | std::ios::binary);
-    std::fstream fin2(in2, std::fstream::in | std::ios::binary);
-    std::ofstream fout(out, std::ios::binary);
+void merge(const int in_files[], int out_file) {
+    std::fstream files[M - 1];
+
+    for (int i = 0; i < M - 1; ++i) {
+        files[i].open(TEMP_FILE_NAMES[in_files[i]], std::fstream::in | std::ios::binary);
+    }
+
+    std::ofstream out(TEMP_FILE_NAMES[out_file], std::ios::binary);
 
 
-    int num1, num2, last = 0;
-    long long n1 = 1, n2 = 1;
-    fin1.read((char *) &num1, sizeof(int));
-    fin2.read((char *) &num2, sizeof(int));
+    int last = 0, nums[M - 1], used[M - 1];
+    for (int i = 0; i < M - 1; ++i) {
+        files[i].read((char *) &nums[i], sizeof(int));
+        used[i] = 1;
+    }
 
 
     while (true) {
         if ((last <= num1 && num1 <= num2) || (num1 <= num2 && num2 < last) || (num2 < last && last <= num1)) {
-            fout.write((char *) (&num1), sizeof(int));
+            out.write((char *) (&num1), sizeof(int));
             last = num1;
             if (n1 < c1 * N) {
                 fin1.read((char *) &num1, sizeof(int));
@@ -125,7 +132,7 @@ void merge(std::string in1, std::string in2, std::string out, long long c1, long
             } else
                 break;
         } else if ((last <= num2 && num2 < num1) || (num2 < num1 && num1 < last) || (num1 < last && last <= num2)) {
-            fout.write((char *) (&num2), sizeof(int));
+            out.write((char *) (&num2), sizeof(int));
             last = num2;
             if (n2 < c2 * N) {
                 fin2.read((char *) &num2, sizeof(int));
@@ -133,7 +140,8 @@ void merge(std::string in1, std::string in2, std::string out, long long c1, long
             } else
                 break;
         } else
-            throw std::invalid_argument(std::to_string(last)+ " - " + std::to_string(num1) + " - " + std::to_string(num2));
+            throw std::invalid_argument(
+                    std::to_string(last) + " - " + std::to_string(num1) + " - " + std::to_string(num2));
 
 
     }
@@ -141,7 +149,7 @@ void merge(std::string in1, std::string in2, std::string out, long long c1, long
 
     if (n1 < c1 * N) {
         for (long long i = 0; i <= c1 * N - n1; ++i) {
-            fout.write((char *) (&num1), sizeof(int));
+            out.write((char *) (&num1), sizeof(int));
             fin1.read((char *) &num1, sizeof(int));
 
         }
@@ -149,7 +157,7 @@ void merge(std::string in1, std::string in2, std::string out, long long c1, long
 
     if (n2 < c2 * N) {
         for (long long i = 0; i <= c2 * N - n2; ++i) {
-            fout.write((char *) (&num2), sizeof(int));
+            out.write((char *) (&num2), sizeof(int));
             fin2.read((char *) &num2, sizeof(int));
 
         }
@@ -189,50 +197,50 @@ void merge(std::string in1, std::string in2, std::string out, long long c1, long
 
     fin1.close();
     fin2.close();
-    fout.close();
+    out.close();
 }
 
 void task(std::string file_name) {
-    std::ifstream file(file_name, std::ios::binary);
-    std::ofstream part1("1", std::ios::binary);
-    std::ofstream part2("2", std::ios::binary);
+    std::ifstream input(file_name, std::ios::binary);
+    std::ofstream temp_files[M - 1];
+    int j = 0;
+    int count[M];
+    for (int i = 0; i < M - 1; ++i) {
+        temp_files[i].open(TEMP_FILE_NAMES[i], std::ios::binary);
+        count[i] = 0;
+    }
 
-    int j = 0, p1 = 0, p2 = 0;
-    while (!file.eof()) {
+    while (!input.eof()) {
         j++;
-        long long n = fib(j) - ((j % 2) ? p1 : p2);
+        long long n = fib(j) - count[j % (M - 1)];
         for (long long i = 0; i < n; ++i) {
 
 
             int nums[N];
-            file.read((char *) &nums, sizeof(nums));
-            if (file.eof())
+            input.read((char *) &nums, sizeof(nums));
+            if (input.eof())
                 break;
 
             quickSort(nums, 0, N - 1);
 
-            if (j % 2) {
-                part1.write((char *) (&nums), sizeof(nums));
-                p1++;
-            } else {
-                part2.write((char *) (&nums), sizeof(nums));
-                p2++;
-            }
+
+            temp_files[j % (M - 1)].write((char *) (&nums), sizeof(nums));
+            count[j % (M - 1)]++;
 
 
         }
     }
 
 
-    part1.close();
-    part2.close();
-    file.close();
+    for (auto &file: temp_files) {
+        file.close();
+    }
+    input.close();
 
 
-    int count[M] = {p1, p2, 0};
-    int len[M] = {1, 1, 0};
+    int len[M] = {1, 1, 1, 1, 0};
 
-    while (count[0] + count[1] + count[2] != 1) {
+    while (count[0] + count[1] + count[2] + count[3] + count[4] != 1) {
 //        pp();
         std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << '\n' << count[0] << ' ' << count[1] << ' '
                   << count[2] << "\n++\n";
@@ -295,19 +303,19 @@ void task(std::string file_name) {
 //              << count[2] << "\n++\n";
 
 
-    if (count[0] == 1){
-        rename("1", "result.bin");
+    if (count[0] == 1) {
+        rename("1",);
         remove("2");
         remove("3");
     }
 
-    if (count[1] == 1){
+    if (count[1] == 1) {
         rename("2", "result.bin");
         remove("1");
         remove("3");
     }
 
-    if (count[2] == 1){
+    if (count[2] == 1) {
         rename("3", "result.bin");
         remove("2");
         remove("1");
@@ -319,12 +327,10 @@ void task(std::string file_name) {
 
 int main() {
     std::ofstream f;
-    f.open("1", std::fstream::out | std::ios::binary | std::ios::trunc);
-    f.close();
-    f.open("2", std::fstream::out | std::ios::binary | std::ios::trunc);
-    f.close();
-    f.open("3", std::fstream::out | std::ios::binary | std::ios::trunc);
-    f.close();
+    for (auto &file_name: TEMP_FILE_NAMES) {
+        f.open(file_name, std::fstream::out | std::ios::binary | std::ios::trunc);
+        f.close();
+    }
 //
 //    create_unsorted_file(INPUT_FILE_NAME);
 //    print_file(INPUT_FILE_NAME);
@@ -334,7 +340,7 @@ int main() {
     auto end = std::chrono::system_clock::now();
 
 
-    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::chrono::duration<double> elapsed_seconds = end - start;
     std::time_t end_time = std::chrono::system_clock::to_time_t(end);
     std::cout << elapsed_seconds.count();
 
