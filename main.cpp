@@ -152,7 +152,7 @@ void merge(int in_files[], int out_index) {
             seq_count = count[in_files[i]];
     }
 
-    if (seq_count == 0 )
+    if (seq_count == 0)
         seq_count = 1;
 
     for (int i = 0; i < M - 1; ++i) {
@@ -313,19 +313,21 @@ void merge(int in_files[], int out_index) {
 //    std::cout << '\n';
 
     while (!to_replace.empty()) {
-        int i = to_replace[to_replace.size()-1];
+        int i = to_replace[to_replace.size() - 1];
         to_replace.pop_back();
-        int j = empty[empty.size()-1];
+        int j = empty[empty.size() - 1];
         empty.pop_back();
 
         files[j].close();
         files[j].open(TEMP_FILE_NAMES[in_files[j]], std::fstream::out | std::ios::binary);
+        files[i].seekp((seq_count * len[in_files[i]] * N) * sizeof(int), std::ios::beg);
         while (true) {
-            files[j].write((char *) (&nums[i]), sizeof(int));
-            files[i].read((char *) &nums[i], sizeof(int));
-
+            int nums[N];
+            files[i].read((char *) &nums, sizeof(nums));
             if (files[i].eof())
                 break;
+            files[j].write((char *) (&nums), sizeof(nums));
+
         }
         count[in_files[j]] = count[in_files[i]] - seq_count;
         len[in_files[j]] = len[in_files[i]];
@@ -424,35 +426,21 @@ void task(std::string file_name) {
                   << count[0] << ' ' << count[1] << ' '
                   << count[2] << ' ' << count[3] << ' ' << count[4] << "\n++\n";
         if (count[0] == 0) {
-//            int m = min(count[1], count[2]);
-//            merge("2", "3", "1", m * len[1], m * len[2], count[1] < count[2]);
-//            count[0] = min(count[1], count[2]);
-//            len[0] = len[1] + len[2];
-//
-//            if (count[1] < count[2]) {
-//                count[1] = abs(count[1] - count[2]);
-//                len[1] = len[2];
-//                count[2] = 0;
-//                len[2] = 0;
-//            } else {
-//                count[2] = abs(count[1] - count[2]);
-//                len[2] = len[1];
-//                count[1] = 0;
-//                len[1] = 0;
-//            }
+            int a[4] = {4, 1, 2, 3};
+            merge(a, 0);
         } else if (count[1] == 0) {
+            int a[4] = {0, 4, 2, 3};
+            merge(a, 1);
         } else if (count[2] == 0) {
+            int a[4] = {0, 1, 4, 3};
+            merge(a, 2);
         } else if (count[3] == 0) {
-
+            int a[4] = {0, 1, 2, 4};
+            merge(a, 3);
         } else if (count[4] == 0) {
             int a[4] = {0, 1, 2, 3};
             merge(a, 4);
-            pp();
-            std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << ' ' << len[3] << ' ' << len[4] << '\n'
-                      << count[0] << ' ' << count[1] << ' '
-                      << count[2] << ' ' << count[3] << ' ' << count[4] << "\n++\n";
 
-            throw std::invalid_argument("2");
         } else
             throw std::invalid_argument("2");
     }
@@ -460,24 +448,19 @@ void task(std::string file_name) {
 //    std::cout << "++\n" << len[0] << ' ' << len[1] << ' ' << len[2] << '\n' << count[0] << ' ' << count[1] << ' '
 //              << count[2] << "\n++\n";
 
+    int res_ind;
+    for (int i = 0; i < M; ++i) {
+        if (count[i] == 1) {
+            res_ind = i;
+            break;
+        }
+    }
 
-//    if (count[0] == 1) {
-//        rename("1",);
-//        remove("2");
-//        remove("3");
-//    }
-//
-//    if (count[1] == 1) {
-//        rename("2", "result.bin");
-//        remove("1");
-//        remove("3");
-//    }
-//
-//    if (count[2] == 1) {
-//        rename("3", "result.bin");
-//        remove("2");
-//        remove("1");
-//    }
+    rename(TEMP_FILE_NAMES[res_ind], OUTPUT_FILE_NAME.c_str());
+    for (int i = 0; i < M; ++i) {
+        if (i != res_ind)
+            remove(TEMP_FILE_NAMES[i]);
+    }
 
 
 }
@@ -489,10 +472,11 @@ int main() {
         f.open(file_name, std::fstream::out | std::ios::binary | std::ios::trunc);
         f.close();
     }
-//
+    remove(OUTPUT_FILE_NAME.c_str());
+
     create_unsorted_file(INPUT_FILE_NAME);
     print_file(INPUT_FILE_NAME);
-//
+
     auto start = std::chrono::system_clock::now();
     task(INPUT_FILE_NAME);
     auto end = std::chrono::system_clock::now();
@@ -503,8 +487,7 @@ int main() {
     std::cout << elapsed_seconds.count();
 
 
-//    print_file("result.bin");
-
+    print_file(OUTPUT_FILE_NAME);
 
 
 }
