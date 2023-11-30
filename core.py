@@ -120,6 +120,16 @@ class Node(BaseModel):
 
         y.data = {key: y.data[key] for key in y.keys}
 
+    def search(self, k):
+        i = 0
+        while i < self.size and k > self.keys[i]:
+            i += 1
+        if i < self.size and k == self.keys[i]:
+            return self
+        if self.leaf:
+            return None
+        return Node(self.node_refs[i]).search(k)
+
 
 class Tree:
     node: Node
@@ -127,7 +137,7 @@ class Tree:
     def __init__(self):
         self.root = Node(name_conf.root)
 
-    def insert(self, key, val):
+    def _insert(self, key, val):
         if self.root.is_full:
             s = Node()
             s.node_refs.append(self.root.name)
@@ -141,6 +151,16 @@ class Tree:
             name_conf.root = self.root.name
         else:
             self.root.insert_not_full(key, val)
+
+    def search(self, key):
+        if (res := self.root.search(key)) is not None:
+            return res.data[key]
+
+    def edit(self, key, val):
+        if (res := self.root.search(key)) is not None:
+            res.data[key] = val
+        else:
+            self._insert(key, val)
 
 
 def clean():
