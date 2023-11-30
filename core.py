@@ -52,6 +52,40 @@ class Node(BaseModel):
             self.node_refs[i] = fn + f'-{i}'
         self.name = fn
 
+    def insert_not_full(self, k):
+        i = self.size - 1
+        if self.leaf:
+            self.keys.append(None)
+            while i >= 0 and self.keys[i] > k:
+                self.keys[i + 1] = self.keys[i]
+                i -= 1
+            self.keys[i + 1] = k
+            # TODO: data insert
+        else:
+            while i >= 0 and self.keys[i] > k:
+                i -= 1
+            if (child := Node(self.node_refs[i+1])).is_full:
+                self.splitChild(i + 1, child)
+                if self.keys[i + 1] < k:
+                    i += 1
+            child.insert_not_full(k)
+
+    def split_child(self, i, y):
+        z = Node("temp")
+        for j in range(self.t - 1):
+            z.keys[j] = y.keys[j + self.t]
+        if not y.leaf:
+            for j in range(self.t):
+                z.C[j] = y.C[j + self.t]
+        y.n = self.t - 1
+        for j in range(self.n, i, -1):
+            self.C[j + 1] = self.C[j]
+        self.C[i + 1] = z
+        for j in range(self.n - 1, i - 1, -1):
+            self.keys[j + 1] = self.keys[j]
+        self.keys[i] = y.keys[self.t - 1]
+        self.n += 1
+
 
 class Tree:
     node: Node
@@ -107,3 +141,5 @@ class Tree:
                 if key > x.keys[i]:
                     i += 1
             self.insert_non_full(child_i, key, val)
+
+
