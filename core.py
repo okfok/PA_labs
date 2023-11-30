@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-T = 50
+T = 2
 
 CONF_FILE_NAME = 'names.conf'
 NAME_PATH = 'nodes/node-'
@@ -34,7 +34,7 @@ class NodeNameConf(BaseModel):
 
     @staticmethod
     def _rand_name():
-        return NAME_PATH + ''.join(random.choice(NAME_CHARS) for _ in range(50))
+        return NAME_PATH + ''.join(random.choice(NAME_CHARS) for _ in range(10))
 
     def get_unique_name(self):
         name = NodeNameConf._rand_name()
@@ -48,10 +48,9 @@ name_conf = NodeNameConf()
 
 
 class Node(BaseModel):
-    name: str = Field(default="")
-    keys: list[int] = Field(default_factory=list)
+    name: str = Field(default='')
+    keys: list = Field(default_factory=list)
     node_refs: list[str] = Field(default_factory=list)
-    data: dict[int, str] = Field(default_factory=dict)
 
     def __init__(self, file_name: str = None):
         if file_name is None:
@@ -88,19 +87,19 @@ class Node(BaseModel):
         i = self.size - 1
         if self.leaf:
             self.keys.append(None)
-            while i >= 0 and self.keys[i] > key:
+            while i >= 0 and self.keys[i][0] > key:
                 self.keys[i + 1] = self.keys[i]
                 i -= 1
-            self.keys[i + 1] = key
-            self.data[key] = val
+            self.keys[i + 1] = key, val
         else:
-            while i >= 0 and self.keys[i] > key:
+            while i >= 0 and self.keys[i][0] > key:
                 i -= 1
-            if (child := Node(self.node_refs[i + 1])).is_full:
-                self.split_child(i + 1, child)
-                if self.keys[i + 1] < key:
+            i += 1
+            if Node(self.node_refs[i]).is_full:
+                self.split_child(i, Node(self.node_refs[i]))
+                if self.keys[i][0] < key:
                     i += 1
-            child.insert_not_full(key, val)
+            Node(self.node_refs[i]).insert_not_full(key, val)
 
     def split_child(self, i, y: 'Node'):
         z = Node()
@@ -112,20 +111,12 @@ class Node(BaseModel):
         self.keys.insert(i, y.keys[T - 1])
         y.keys = y.keys[0:T - 1]
 
-        z.data = {key: y.data[key] for key in z.keys}
-
-        for key in self.keys:
-            if (val := y.data.get(key)) is not None:
-                self.data[key] = val
-
-        y.data = {key: y.data[key] for key in y.keys}
-
     def search(self, k):
         i = 0
-        while i < self.size and k > self.keys[i]:
+        while i < self.size and k > self.keys[i][0]:
             i += 1
-        if i < self.size and k == self.keys[i]:
-            return self
+        if i < self.size and k == self.keys[i][0]:
+            return self, self.keys[i][1]
         if self.leaf:
             return None
         return Node(self.node_refs[i]).search(k)
@@ -144,7 +135,7 @@ class Tree:
 
             s.split_child(0, self.root)
             i = 0
-            if s.keys[0] < key:
+            if s.keys[0][0] < key:
                 i += 1
             Node(s.node_refs[i]).insert_not_full(key, val)
             self.root = s
@@ -153,29 +144,34 @@ class Tree:
             self.root.insert_not_full(key, val)
 
     def search(self, key):
-        if (res := self.root.search(key)) is not None:
-            return res.data.get(key)
+        res = self.root.search(key)
+        if res is not None:
+            return res[1]
 
     def edit(self, key, val):
-        if (res := self.root.search(key)) is not None:
-            res.data[key] = val
+        res = self.root.search(key)
+        if res is not None:
+            for i, (k, v) in enumerate(res[0].keys):
+                if k == key:
+                    res[0].keys[i] = key, val
         else:
             self._insert(key, val)
 
-    def delete(self, x: Node, k: int):
+    def delete(self, k: int, x: Node = None):
+        x = x or self.root
         i = 0
-        while i < len(x.keys) and k > x.keys[i]:
+        while i < x.size and k > x.keys[i][0]:
             i += 1
         if x.leaf:
-            if i < len(x.keys) and x.keys[i] == k:
+            if i <  x.size and x.keys[i][0] == k:
                 x.keys.pop(i)
                 return
             return
 
-        if i < len(x.keys) and x.keys[i] == k:
+        if i <  x.size and x.keys[i][0] == k:
             return self.delete_internal_node(x, k, i)
         elif (child := Node(x.node_refs[i])).size >= T:
-            self.delete(child, k)
+            self.delete(k, child)
         else:
             if i != 0 and i + 2 < len(x.node_refs):
                 if Node(x.node_refs[i - 1]).size >= T:
@@ -194,12 +190,12 @@ class Tree:
                     self.delete_sibling(x, i, i - 1)
                 else:
                     self.delete_merge(x, i, i - 1)
-            self.delete(child, k)
+            self.delete(k, child)
 
     # Delete internal node
     def delete_internal_node(self, x: Node, k, i):
         if x.leaf:
-            if x.keys[i] == k:
+            if x.keys[i][0] == k:
                 x.keys.pop(i)
             return
 
