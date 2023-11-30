@@ -160,37 +160,40 @@ class Tree:
     def delete(self, k: int, x: Node = None):
         x = x or self.root
         i = 0
-        while i < x.size and k > x.keys[i][0]:
+        while i < x.size and x.keys[i][0] < k:
             i += 1
-        if x.leaf:
-            if i < x.size and x.keys[i][0] == k:
-                x.keys.pop(i)
-                return
-            return
 
         if i < x.size and x.keys[i][0] == k:
-            return self.delete_internal_node(x, k, i)
-        elif Node(x.node_refs[i]).size >= T:
-            self.delete(k, Node(x.node_refs[i]))
+            if x.leaf:
+                x.keys.pop(i)
+                return
+            else:
+                return self.delete_internal_node(x, k, i)
+        # elif Node(x.node_refs[i]).size >= T:
+        #     self.delete(k, Node(x.node_refs[i]))
         else:
-            if i != 0 and i + 2 < len(x.node_refs):
-                if Node(x.node_refs[i - 1]).size >= T:
-                    self.delete_sibling(x, i, i - 1)
-                elif Node(x.node_refs[i + 1]).size >= T:
-                    self.delete_sibling(x, i, i + 1)
-                else:
-                    self.delete_merge(x, i, i + 1)
-            elif i == 0:
-                if Node(x.node_refs[i + 1]).size >= T:
-                    self.delete_sibling(x, i, i + 1)
-                else:
-                    self.delete_merge(x, i, i + 1)
-            elif i + 1 == len(x.node_refs):
-                if Node(x.node_refs[i - 1]).size >= T:
-                    self.delete_sibling(x, i, i - 1)
-                else:
-                    self.delete_merge(x, i, i - 1)
-            self.delete(k, Node(x.node_refs[i]))
+
+            if not x.leaf:
+                if i != 0 and i + 2 < len(x.node_refs):
+                    if Node(x.node_refs[i - 1]).size >= T:
+                        self.delete_sibling(x, i, i - 1)
+                    elif Node(x.node_refs[i + 1]).size >= T:
+                        self.delete_sibling(x, i, i + 1)
+                    # else:
+                    #     self.delete_merge(x, i, i + 1)
+                    #     i -= 1
+                elif i == 0:
+                    if Node(x.node_refs[i + 1]).size >= T:
+                        self.delete_sibling(x, i, i + 1)
+                    # else:
+                    #     self.delete_merge(x, i, i + 1)
+                elif i + 1 == len(x.node_refs):
+                    if Node(x.node_refs[i - 1]).size >= T:
+                        self.delete_sibling(x, i, i - 1)
+                    # else:
+                    #     self.delete_merge(x, i, i - 1)
+                    #     i -= 1
+                self.delete(k, Node(x.node_refs[i]))
 
     # Delete internal node
     def delete_internal_node(self, x: Node, k, i):
@@ -249,10 +252,10 @@ class Tree:
         else:
             lsnode = Node(x.node_refs[j])
             lsnode.keys.append(x.keys[j])
-            for i in range(len(cnode.keys)):
-                lsnode.keys.append(cnode.keys[i])
+            for k in range(len(cnode.keys)):
+                lsnode.keys.append(cnode.keys[k])
                 if len(lsnode.node_refs) > 0:
-                    lsnode.node_refs.append(cnode.node_refs[i])
+                    lsnode.node_refs.append(cnode.node_refs[k])
             if len(lsnode.node_refs) > 0:
                 lsnode.node_refs.append(cnode.node_refs.pop())
             new = lsnode
@@ -280,6 +283,17 @@ class Tree:
             x.keys[i - 1] = lsnode.keys.pop()
             if len(lsnode.node_refs) > 0:
                 cnode.node_refs.insert(0, lsnode.node_refs.pop())
+
+    def print_tree(self, x: Node = None, l=0):
+        x = x or self.root
+        print("Level ", l, " ", len(x.keys), end=":")
+        for i in x.keys:
+            print(i, end=" ")
+        print()
+        l += 1
+        if len(x.node_refs) > 0:
+            for i in x.node_refs:
+                self.print_tree(Node(i), l)
 
 
 def clean():
