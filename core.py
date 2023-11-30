@@ -70,21 +70,24 @@ class Tree:
 
     @staticmethod
     def split_child(x: Node, i):
-        # y = Node(x.node_refs[i])
         z = Node("temp")
         z.leaf = Node(x.node_refs[i]).leaf
         x.node_refs.insert(i + 1, z.name)
 
+        del z
 
         x.rename()
+
+        y = Node(x.node_refs[i])
+        z = Node(x.node_refs[i + 1])
 
         x.keys.insert(i, y.keys[T - 1])
 
         z.keys = y.keys[T:(2 * T) - 1]
         y.keys = y.keys[0:T - 1]
         if not y.leaf:
-            z.child = y.child[T:(2 * T)]
-            y.child = y.child[0:T - 1]
+            z.node_refs = y.node_refs[T:(2 * T)]
+            y.node_refs = y.node_refs[0:T - 1]
 
     def insert_non_full(self, x: Node, key, val):
         i = len(x.keys) - 1
@@ -103,4 +106,3 @@ class Tree:
                 if key > x.keys[i]:
                     i += 1
             self.insert_non_full(child_i, key, val)
-
