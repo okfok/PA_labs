@@ -12,7 +12,6 @@ class Node(BaseModel):
     keys: list[int] = Field(default_factory=list)
     node_refs: list[str] = Field(default_factory=list)
     data: dict[int, str] = Field(default_factory=dict)
-    leaf: bool = Field(default=False)
 
     def __init__(self, file_name: str = None):
         if file_name is None:
@@ -41,6 +40,10 @@ class Node(BaseModel):
     def is_full(self) -> bool:
         return self.size == (2 * T - 1)
 
+    @property
+    def leaf(self):
+        return len(self.node_refs) == 0
+
     def rename(self, fn: str = None):
         if fn is None:
             fn = self.name
@@ -55,7 +58,6 @@ class Tree:
 
     def __init__(self):
         self.root = Node()
-        self.root.leaf = True
 
     def insert(self, key, val):
         if self.root.is_full:
@@ -71,7 +73,6 @@ class Tree:
     @staticmethod
     def split_child(x: Node, i):
         z = Node("temp")
-        z.leaf = Node(x.node_refs[i]).leaf
         x.node_refs.insert(i + 1, z.name)
 
         del z
