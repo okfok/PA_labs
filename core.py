@@ -163,15 +163,15 @@ class Tree:
         while i < x.size and k > x.keys[i][0]:
             i += 1
         if x.leaf:
-            if i <  x.size and x.keys[i][0] == k:
+            if i < x.size and x.keys[i][0] == k:
                 x.keys.pop(i)
                 return
             return
 
-        if i <  x.size and x.keys[i][0] == k:
+        if i < x.size and x.keys[i][0] == k:
             return self.delete_internal_node(x, k, i)
-        elif (child := Node(x.node_refs[i])).size >= T:
-            self.delete(k, child)
+        elif Node(x.node_refs[i]).size >= T:
+            self.delete(k, Node(x.node_refs[i]))
         else:
             if i != 0 and i + 2 < len(x.node_refs):
                 if Node(x.node_refs[i - 1]).size >= T:
@@ -190,7 +190,7 @@ class Tree:
                     self.delete_sibling(x, i, i - 1)
                 else:
                     self.delete_merge(x, i, i - 1)
-            self.delete(k, child)
+            self.delete(k, Node(x.node_refs[i]))
 
     # Delete internal node
     def delete_internal_node(self, x: Node, k, i):
@@ -199,26 +199,26 @@ class Tree:
                 x.keys.pop(i)
             return
 
-        if (child := Node(x.node_refs[i])).size >= T:
-            x.keys[i] = self.delete_predecessor(child)
+        if Node(x.node_refs[i]).size >= T:
+            x.keys[i] = self.delete_predecessor(Node(x.node_refs[i]))
             return
-        elif (child1 := Node(x.node_refs[i + 1])).size >= T:
-            x.keys[i] = self.delete_successor(child1)
+        elif Node(x.node_refs[i + 1]).size >= T:
+            x.keys[i] = self.delete_successor(Node(x.node_refs[i + 1]))
             return
         else:
             self.delete_merge(x, i, i + 1)
-            self.delete_internal_node(child, k, T - 1)
+            self.delete_internal_node(Node(x.node_refs[i]), k, T - 1)
 
     # Delete the predecessor
     def delete_predecessor(self, x: Node):
         if x.leaf:
             return x.keys.pop()
         n = len(x.keys) - 1
-        if (child := Node(x.node_refs[n])).size >= T:
+        if Node(x.node_refs[n]).size >= T:
             self.delete_sibling(x, n + 1, n)
         else:
             self.delete_merge(x, n, n + 1)
-        self.delete_predecessor(child)
+        self.delete_predecessor(Node(x.node_refs[n]))
 
     # Delete the successor
     def delete_successor(self, x: Node):
