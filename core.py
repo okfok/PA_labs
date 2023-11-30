@@ -97,26 +97,20 @@ class Node(BaseModel):
             while i >= 0 and self.keys[i] > k:
                 i -= 1
             if (child := Node(self.node_refs[i + 1])).is_full:
-                self.splitChild(i + 1, child)
+                self.split_child(i + 1, child)
                 if self.keys[i + 1] < k:
                     i += 1
             child.insert_not_full(k)
 
-    def split_child(self, i, y):
-        z = Node("temp")
-        for j in range(self.t - 1):
-            z.keys[j] = y.keys[j + self.t]
+    def split_child(self, i, y: 'Node'):
+        z = Node()
+        z.keys = y.keys[T:(2 * T) - 1]
         if not y.leaf:
-            for j in range(self.t):
-                z.C[j] = y.C[j + self.t]
-        y.n = self.t - 1
-        for j in range(self.n, i, -1):
-            self.C[j + 1] = self.C[j]
-        self.C[i + 1] = z
-        for j in range(self.n - 1, i - 1, -1):
-            self.keys[j + 1] = self.keys[j]
-        self.keys[i] = y.keys[self.t - 1]
-        self.n += 1
+            z.node_refs = y.node_refs[T:2 * T]
+            y.node_refs = y.node_refs[0:T]
+        self.node_refs.insert(i + 1, z.name)
+        self.keys.insert(i, y.keys[T - 1])
+        y.keys = y.keys[0:T - 1]
 
 
 class Tree:
@@ -127,56 +121,26 @@ class Tree:
 
     def insert(self, key, val):
         if self.root.is_full:
-            root = self.root
-            temp = Node()
-            self.root = temp
-            temp.node_refs.insert(0, root.name)
+            s = Node()
+            s.node_refs.append(self.root.name)
 
+            s.split_child(0, self.root)
+            i = 0
+            if s.keys[0] < key:
+                i += 1
+            Node(s.node_refs[i]).insert_not_full(key)
+            self.root = s
             name_conf.root = self.root.name
-
-            self.split_child(temp, 0)
-            self.insert_non_full(temp, key, val)
         else:
-            self.insert_non_full(self.root, key, val)
-
-    @staticmethod
-    def split_child(x: Node, i):
-        z = Node()
-        x.node_refs.insert(i + 1, z.name)
-
-        y = Node(x.node_refs[i])
-        z = Node(x.node_refs[i + 1])
-
-        x.keys.insert(i, y.keys[T - 1])
-
-        z.keys = y.keys[T:(2 * T) - 1]
-        y.keys = y.keys[0:T - 1]
-        if not y.leaf:
-            z.node_refs = y.node_refs[T:(2 * T)]
-            y.node_refs = y.node_refs[0:T - 1]
-
-    def insert_non_full(self, x: Node, key, val):
-        i = len(x.keys) - 1
-        if x.leaf:
-            x.keys.append((None, None))
-            while i >= 0 and key < x.keys[i]:
-                x.keys[i + 1] = x.keys[i]
-                i -= 1
-            x.keys[i + 1] = key
-        else:
-            while i >= 0 and key < x.keys[i]:
-                i -= 1
-            i += 1
-            if (child_i := Node(x.node_refs[i])).is_full:
-                self.split_child(x, i)
-                if key > x.keys[i]:
-                    i += 1
-            self.insert_non_full(child_i, key, val)
+            self.root.insert_not_full(key)
 
 
 def clean():
-    os.remove(CONF_FILE_NAME)
     folder = 'nodes/'
+    try:
+        os.remove(CONF_FILE_NAME)
+    except Exception as e:
+        print('Failed to delete %s. Reason: %s' % (CONF_FILE_NAME, e))
     for filename in os.listdir(folder):
         file_path = os.path.join(folder, filename)
         try:
