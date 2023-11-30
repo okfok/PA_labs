@@ -84,23 +84,23 @@ class Node(BaseModel):
     def leaf(self):
         return len(self.node_refs) == 0
 
-    def insert_not_full(self, k):
+    def insert_not_full(self, key, val):
         i = self.size - 1
         if self.leaf:
             self.keys.append(None)
-            while i >= 0 and self.keys[i] > k:
+            while i >= 0 and self.keys[i] > key:
                 self.keys[i + 1] = self.keys[i]
                 i -= 1
-            self.keys[i + 1] = k
-            # TODO: data insert
+            self.keys[i + 1] = key
+            self.data[key] = val
         else:
-            while i >= 0 and self.keys[i] > k:
+            while i >= 0 and self.keys[i] > key:
                 i -= 1
             if (child := Node(self.node_refs[i + 1])).is_full:
                 self.split_child(i + 1, child)
-                if self.keys[i + 1] < k:
+                if self.keys[i + 1] < key:
                     i += 1
-            child.insert_not_full(k)
+            child.insert_not_full(key, val)
 
     def split_child(self, i, y: 'Node'):
         z = Node()
@@ -111,6 +111,14 @@ class Node(BaseModel):
         self.node_refs.insert(i + 1, z.name)
         self.keys.insert(i, y.keys[T - 1])
         y.keys = y.keys[0:T - 1]
+
+        z.data = {key: y.data[key] for key in z.keys}
+
+        for key in self.keys:
+            if (val := y.data.get(key)) is not None:
+                self.data[key] = val
+
+        y.data = {key: y.data[key] for key in y.keys}
 
 
 class Tree:
@@ -128,11 +136,11 @@ class Tree:
             i = 0
             if s.keys[0] < key:
                 i += 1
-            Node(s.node_refs[i]).insert_not_full(key)
+            Node(s.node_refs[i]).insert_not_full(key, val)
             self.root = s
             name_conf.root = self.root.name
         else:
-            self.root.insert_not_full(key)
+            self.root.insert_not_full(key, val)
 
 
 def clean():
