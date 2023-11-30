@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-T = 2
+T = 50
 
 CONF_FILE_NAME = 'names.conf'
 NAME_PATH = 'nodes/node-'
@@ -154,13 +154,136 @@ class Tree:
 
     def search(self, key):
         if (res := self.root.search(key)) is not None:
-            return res.data[key]
+            return res.data.get(key)
 
     def edit(self, key, val):
         if (res := self.root.search(key)) is not None:
             res.data[key] = val
         else:
             self._insert(key, val)
+
+    def delete(self, x: Node, k: int):
+        i = 0
+        while i < len(x.keys) and k > x.keys[i]:
+            i += 1
+        if x.leaf:
+            if i < len(x.keys) and x.keys[i] == k:
+                x.keys.pop(i)
+                return
+            return
+
+        if i < len(x.keys) and x.keys[i] == k:
+            return self.delete_internal_node(x, k, i)
+        elif (child := Node(x.node_refs[i])).size >= T:
+            self.delete(child, k)
+        else:
+            if i != 0 and i + 2 < len(x.node_refs):
+                if Node(x.node_refs[i - 1]).size >= T:
+                    self.delete_sibling(x, i, i - 1)
+                elif Node(x.node_refs[i + 1]).size >= T:
+                    self.delete_sibling(x, i, i + 1)
+                else:
+                    self.delete_merge(x, i, i + 1)
+            elif i == 0:
+                if Node(x.node_refs[i + 1]).size >= T:
+                    self.delete_sibling(x, i, i + 1)
+                else:
+                    self.delete_merge(x, i, i + 1)
+            elif i + 1 == len(x.node_refs):
+                if Node(x.node_refs[i - 1]).size >= T:
+                    self.delete_sibling(x, i, i - 1)
+                else:
+                    self.delete_merge(x, i, i - 1)
+            self.delete(child, k)
+
+    # Delete internal node
+    def delete_internal_node(self, x: Node, k, i):
+        if x.leaf:
+            if x.keys[i] == k:
+                x.keys.pop(i)
+            return
+
+        if (child := Node(x.node_refs[i])).size >= T:
+            x.keys[i] = self.delete_predecessor(child)
+            return
+        elif (child1 := Node(x.node_refs[i + 1])).size >= T:
+            x.keys[i] = self.delete_successor(child1)
+            return
+        else:
+            self.delete_merge(x, i, i + 1)
+            self.delete_internal_node(child, k, T - 1)
+
+    # Delete the predecessor
+    def delete_predecessor(self, x: Node):
+        if x.leaf:
+            return x.keys.pop()
+        n = len(x.keys) - 1
+        if (child := Node(x.node_refs[n])).size >= T:
+            self.delete_sibling(x, n + 1, n)
+        else:
+            self.delete_merge(x, n, n + 1)
+        self.delete_predecessor(child)
+
+    # Delete the successor
+    def delete_successor(self, x: Node):
+        if x.leaf:
+            return x.keys.pop(0)
+        if Node(x.node_refs[1]).size >= T:
+            self.delete_sibling(x, 0, 1)
+        else:
+            self.delete_merge(x, 0, 1)
+        self.delete_successor(Node(x.node_refs[0]))
+
+    # Delete resolution
+    def delete_merge(self, x: Node, i, j):
+        cnode = Node(x.node_refs[i])
+
+        if j > i:
+            rsnode = Node(x.node_refs[j])
+            cnode.keys.append(x.keys[i])
+            for k in range(len(rsnode.keys)):
+                cnode.keys.append(rsnode.keys[k])
+                if len(rsnode.node_refs) > 0:
+                    cnode.node_refs.append(rsnode.node_refs[k])
+            if len(rsnode.node_refs) > 0:
+                cnode.node_refs.append(rsnode.node_refs.pop())
+            new = cnode
+            x.keys.pop(i)
+            x.node_refs.pop(j)
+        else:
+            lsnode = Node(x.node_refs[j])
+            lsnode.keys.append(x.keys[j])
+            for i in range(len(cnode.keys)):
+                lsnode.keys.append(cnode.keys[i])
+                if len(lsnode.node_refs) > 0:
+                    lsnode.node_refs.append(cnode.node_refs[i])
+            if len(lsnode.node_refs) > 0:
+                lsnode.node_refs.append(cnode.node_refs.pop())
+            new = lsnode
+            x.keys.pop(j)
+            x.node_refs.pop(i)
+
+        if x == self.root and len(x.keys) == 0:
+            self.root = new
+            name_conf.root = self.root.name
+
+    # Delete the sibling
+    def delete_sibling(self, x: Node, i, j):
+        cnode = Node(x.node_refs[i])
+        if i < j:
+            rsnode = Node(x.node_refs[j])
+            cnode.keys.append(x.keys[i])
+            x.keys[i] = rsnode.keys[0]
+            if len(rsnode.node_refs) > 0:
+                cnode.node_refs.append(rsnode.node_refs[0])
+                rsnode.node_refs.pop(0)
+            rsnode.keys.pop(0)
+        else:
+            lsnode = Node(x.node_refs[j])
+            cnode.keys.insert(0, x.keys[i - 1])
+            x.keys[i - 1] = lsnode.keys.pop()
+            if len(lsnode.node_refs) > 0:
+                cnode.node_refs.insert(0, lsnode.node_refs.pop())
 
 
 def clean():
