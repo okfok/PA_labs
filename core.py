@@ -1,16 +1,18 @@
+import copy
 import random
+from copy import deepcopy
+
 import networkx as nx
 import matplotlib.pyplot as plt
 from matplotlib import pylab
 
 GRAPH_SIZE = 150
-MIN_POWER_OF_VERTEX = 1
-MAX_POWER_OF_VERTEX = 30
+EDGE_PROBABILITY = 0.05
 
 BEE_COUNT = 22
 SCOUT_COUNT = 3
 
-COLORS = [None, 'green', 'red', 'yellow', 'blue', 'purple', 'black', 'orange', 'white']
+COLORS = [None, 'green', 'red', 'yellow', 'blue', 'purple', 'darkred', 'orange', 'lime', 'cyan', 'violet']
 
 
 class Cell:
@@ -25,18 +27,16 @@ class Cell:
 
 
 class Graph:
-    def __init__(self, vertex_count: int = GRAPH_SIZE):
+    def __init__(self, vertex_count: int = GRAPH_SIZE, skip_rand_gen: bool = False):
+
         self.count = vertex_count
+
+        if skip_rand_gen:
+            return
         self._edge_table = [
-            [Cell() for _ in range(i)]
+            [Cell(random.randint(0, 99) < (EDGE_PROBABILITY * 100)) for _ in range(i)]
             for i in range(vertex_count)
         ]
-        for i in range(vertex_count):
-            edge_count = random.randint(MIN_POWER_OF_VERTEX, MAX_POWER_OF_VERTEX // 2)
-            left = edge_count - self.power_of_vertex(i)
-            if left > 0:
-                for pos, cell in random.sample(list(filter(lambda x: x[1].val == 0, self.edges(i))), left):
-                    cell.val = 1
 
         self.color_map = [0 for _ in range(vertex_count)]
         self.used_colors = set()
@@ -75,12 +75,13 @@ class Graph:
         G.add_nodes_from([i for i in range(self.count)])
 
         G.add_edges_from(visual)
-        plt.figure(figsize=(16, 12))
+        plt.figure(figsize=(32, 24))
         # plt.axis = False
         color_map = [COLORS[i] for i in self.color_map]
         nx.draw_networkx(G, node_color=color_map, with_labels=True)
         plt.show()
 
+    @property
     def chromatic_number(self):
         used_colors = set()
         for i in range(self.count):
@@ -90,14 +91,19 @@ class Graph:
 
     def color_graph(self):
         while not all(self.color_map):
-            taken_vertexes = random.sample([i for i in range(self.count) if i not in self.visited], SCOUT_COUNT)
+            pop = [i for i in range(self.count) if i not in self.visited]
+            taken_vertexes = random.sample(pop, SCOUT_COUNT) if len(pop) > SCOUT_COUNT else pop
             nectar = [self.power_of_vertex(i) for i in taken_vertexes]
+            if sum(nectar) == 0:
+                self.color_vertex(random.choice(taken_vertexes))
+                continue
             to_visit = random.choices(taken_vertexes, nectar)[0]
             self.visited.add(to_visit)
 
             self.color_vertex(to_visit)
 
     def color_vertex(self, vertex):
+        self.color_map[vertex] = 0
         if self.power_of_vertex(vertex) == 0:
             self.color_map[vertex] = 1
             self.used_colors.add(1)
@@ -121,22 +127,45 @@ class Graph:
                     break
 
     def improve_coloring(self, iteration_count: int):
+        self.visited = set()
         for _ in range(iteration_count):
             vertexes = [i for i in range(self.count) if i not in self.visited]
             nectar = [self.power_of_vertex(i) for i in vertexes]
             if len(vertexes) == 0:
                 return
-            self.color_vertex((visited := random.choices(vertexes, nectar)[0]))
+            if sum(nectar) == 0:
+                visited = random.choice(vertexes)
+            else:
+                visited = random.choices(vertexes, nectar)[0]
+            self.color_vertex(visited)
             self.visited.add(visited)
+
+    def copy(self):
+        new = Graph(self.count)
+        new._edge_table = copy.deepcopy(self._edge_table)
+        new.color_map = copy.deepcopy(self.color_map)
+
+        return new
+
 
 def _main():
     g = Graph()
     g.color_graph()
-    print(g.chromatic_number())
+    print('Chromatic number: ', g.chromatic_number)
     g.draw()
+    states = []
+    for _ in range(10):
+        states.append(g)
+        g = g.copy()
+        g.improve_coloring(10)
+        print('Chromatic number: ', g.chromatic_number)
+        g.draw()
 
-    # for i in range(g.count):
-    #     print(i,  g.color_map[i], g.adjacent_vertexes_colors(i), g.adjacent_vertexes(i))
+    for i in states:
+        print(i.chromatic_number)
+
+    for i in range(g.count):
+        assert g.color_map[i] not in g.adjacent_vertexes_colors(i)
 
 
 if __name__ == '__main__':
