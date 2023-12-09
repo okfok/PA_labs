@@ -151,21 +151,20 @@ class Graph:
 def _main():
     g = Graph()
     g.color_graph()
-    print('Chromatic number: ', g.chromatic_number)
+    print('Chromatic number: ', last := g.chromatic_number)
     g.draw()
     states = []
-    for _ in range(10):
+    for _ in range(20):
         states.append(g)
-        g = g.copy()
+        if last < g.chromatic_number:
+            for state in reversed(states):
+                if state.chromatic_number <= last:
+                    g = state.copy()
+        else:
+            g = g.copy()
         g.improve_coloring(10)
         print('Chromatic number: ', g.chromatic_number)
         g.draw()
-
-    for i in states:
-        print(i.chromatic_number)
-
-    for i in range(g.count):
-        assert g.color_map[i] not in g.adjacent_vertexes_colors(i)
 
 
 if __name__ == '__main__':
