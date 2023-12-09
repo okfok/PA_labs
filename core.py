@@ -10,6 +10,8 @@ MAX_POWER_OF_VERTEX = 30
 BEE_COUNT = 22
 SCOUT_COUNT = 3
 
+COLORS = [None, 'green', 'red', 'yellow', 'blue', 'purple', 'black', 'orange', 'white']
+
 
 class Cell:
     def __init__(self, val: bool = 0):
@@ -57,7 +59,7 @@ class Graph:
         return [vert for vert, val in self.edges(vertex) if val]
 
     def adjacent_vertexes_colors(self, vertex):
-        return set([self.color_map[vert] for vert, val in self.edges(vertex) if val])
+        return set([self.color_map[vert] for vert in self.adjacent_vertexes(vertex)])
 
     def power_of_vertex(self, vertex):
         return sum(map(lambda x: x[1].val, self.edges(vertex)))
@@ -70,10 +72,13 @@ class Graph:
                 if self._edge_table[i][j].val:
                     visual.append([i, j])
         G = nx.Graph()
+        G.add_nodes_from([i for i in range(self.count)])
+
         G.add_edges_from(visual)
         plt.figure(figsize=(16, 12))
         # plt.axis = False
-        nx.draw_networkx(G, node_color=self.color_map, with_labels=True)
+        color_map = [COLORS[i] for i in self.color_map]
+        nx.draw_networkx(G, node_color=color_map, with_labels=True)
         plt.show()
 
     def chromatic_number(self):
@@ -87,16 +92,10 @@ class Graph:
         while not all(self.color_map):
             taken_vertexes = random.sample([i for i in range(self.count) if i not in self.visited], SCOUT_COUNT)
             nectar = [self.power_of_vertex(i) for i in taken_vertexes]
-            for to_visit in taken_vertexes:
-                self.visited.add(to_visit)
+            to_visit = random.choices(taken_vertexes, nectar)[0]
+            self.visited.add(to_visit)
 
-                self.color_vertex(to_visit)
-
-        # for i in range(self.count):
-        #     if self.color_map[i] in self.adjacent_vertexes_colors(i):
-        #         self.color_vertex(i)
-
-
+            self.color_vertex(to_visit)
 
     def color_vertex(self, vertex):
         if self.power_of_vertex(vertex) == 0:
@@ -121,13 +120,24 @@ class Graph:
                     self.color_map[vertex] = color
                     break
 
+    def improve_coloring(self, iteration_count: int):
+        for _ in range(iteration_count):
+            vertexes = [i for i in range(self.count) if i not in self.visited]
+            nectar = [self.power_of_vertex(i) for i in vertexes]
+            if len(vertexes) == 0:
+                return
+            self.color_vertex((visited := random.choices(vertexes, nectar)[0]))
+            self.visited.add(visited)
 
-if __name__ == '__main__':
+def _main():
     g = Graph()
     g.color_graph()
     print(g.chromatic_number())
     g.draw()
 
-    for i in range(g.count):
-        if g.color_map[i] in g.adjacent_vertexes_colors(i):
-            print(i)
+    # for i in range(g.count):
+    #     print(i,  g.color_map[i], g.adjacent_vertexes_colors(i), g.adjacent_vertexes(i))
+
+
+if __name__ == '__main__':
+    _main()
