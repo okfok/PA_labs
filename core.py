@@ -8,7 +8,7 @@ GRAPH_SIZE = 300
 EDGE_PROBABILITY = 0.05
 
 POPULATION_SIZE = 10
-MUTATION_PROBABILITY = 0.05
+MUTATION_PROBABILITY = 0.025
 
 
 class Solution:
@@ -70,7 +70,7 @@ class Solution:
 
     def mutate(self):
         for i in range(GRAPH_SIZE):
-            self.genes[i] = bool(self.genes[i] - (random.randint(0, 100) < 100 * MUTATION_PROBABILITY))
+            self.genes[i] = bool(self.genes[i] - (random.randint(0, 1000) < 1000 * MUTATION_PROBABILITY))
 
         return self.solve()
 
@@ -94,11 +94,12 @@ class Population:
             self.population, [1 / solution.cover_len for solution in self.population], k=2
         )
         children: list[Solution] = [Solution.crossover_prb(parrent1, parrent2) for _ in range(POPULATION_SIZE // 2)]
-        self.population += children
 
         for child in children:
             child.mutate()
             child.local_improvement()
+
+        self.population = children + self.population
 
         self.population.sort(key=lambda x: x.cover_len)
 
