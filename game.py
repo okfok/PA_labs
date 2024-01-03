@@ -1,0 +1,179 @@
+import numpy as np
+
+
+class boardGame:
+    def __init__(self, board, player, n):
+        self.board = np.array(board)
+        self.playerPlaying = player
+        self.remainingPawns = n
+
+    def print(self):
+        print("\n")
+        print(self.board)
+        if self.remainingPawns != 8:
+            print("\nPlayer " + str(-self.playerPlaying) + " juste played. Turn for " + str(self.playerPlaying) + ".\n")
+
+    def initialize(self):
+        self.board = np.zeros((5, 5), dtype=np.int16)
+        self.playerPlaying = 1
+        self.remainingPawns = 8
+
+    def switchPlayer(self):
+        self.playerPlaying *= -1
+
+    def place(self, x, y, cflag):
+        if self.board[x][y] != 0:
+            if cflag:
+                print("This position is occupied. \n")
+            return False
+        else:
+            self.board[x][y] = self.playerPlaying
+            self.remainingPawns -= 1
+            self.switchPlayer()
+            return True
+
+    def move(self, x, y, a, b, cflag):
+        if a != x or b != y:
+            if self.board[a][b] != 0:
+                if cflag:
+                    print("This destination is occupied. \n")
+                return False
+            else:
+                if self.board[x][y] == 0:
+                    if cflag:
+                        print("There is no pawn to move at this position. \n")
+                    return False
+                else:
+                    if self.board[x][y] == self.playerPlaying:
+                        adjacentSlots = self.getAdjacent(x, y)
+                        if [a, b] in adjacentSlots:
+                            self.board[a][b] = self.board[x][y]
+                            self.board[x][y] = 0
+                            self.switchPlayer()
+                            return True
+                        else:
+                            if cflag:
+                                print("Destination is not adjacent to the selected pawn. \n")
+                            return False
+                    else:
+                        if cflag:
+                            print("The pawn selected is not one of yours")
+                        return False
+        else:
+            if cflag:
+                print("Initial position and destination must be different. \n")
+            return False
+
+    def getAdjacent(self, a, b):
+        adjacentSlots = []
+        directions = [
+            [-1, -1], [-1, 0], [-1, +1],
+            [0, -1], [0, +1],
+            [+1, -1], [+1, 0], [+1, +1],
+        ]
+
+        for i in directions:
+            x = a + i[0]
+            y = b + i[1]
+
+            if 0 <= x <= 4 and 0 <= y <= 4:
+                adjacentSlots.append([x, y])
+        return adjacentSlots
+
+    def winner(self):
+        x = 0
+        y = 0
+        posX = 0
+        posY = 0
+
+        # LINES
+        for i in range(5):
+            if np.sum(self.board[i] == 1) == 4:
+                if np.all(self.board[i][0:4] == 1) or np.all(self.board[i][1:5] == 1):
+                    return 1
+            elif np.sum(self.board[i] == -1) == 4:  #
+                if np.all(self.board[i][0:4] == -1) or np.all(self.board[i][1:5] == -1):
+                    return -1
+
+        # COLUMNS
+        for i in range(5):
+            column = self.board[:, i]
+            if np.sum(column == 1) == 4:
+                if np.all(column[0:4] == 1) or np.all(column[1:5] == 1):
+                    return 1
+            elif np.sum(column == -1) == 4:
+                if np.all(column[0:4] == -1) or np.all(column[1:5] == -1):
+                    return -1
+
+        # DIAGONALS
+        for i in range(-1, 2):
+            diag = self.board.diagonal(i)
+            oppdiag = np.fliplr(self.board).diagonal(i)
+
+            if np.sum(diag == 1) == 4 or np.sum(oppdiag == 1) == 4:
+                if np.all(diag[0:4] == 1) or np.all(oppdiag[0:4] == 1):
+                    return 1
+                if len(diag) > 4:
+                    if np.all(diag[1:5] == 1) or np.all(oppdiag[1:5] == 1):
+                        return 1
+            elif np.sum(diag == -1) == 4 or np.sum(oppdiag == -1) == 4:
+                if np.all(diag[0:4] == -1) or np.all(oppdiag[0:4] == -1):
+                    return -1
+                if len(diag) > 4:
+                    if np.all(diag[1:5] == -1) or np.all(oppdiag[1:5] == -1):
+                        return -1
+
+        # CUBES
+        for i in range(4):
+            for j in range(4):
+                c = [self.board[i][j:j + 2], self.board[i + 1][j:j + 2]]
+                cube = np.array(c)
+
+                if np.all(cube == 1):
+                    return 1
+                elif np.all(cube == -1):
+                    return -1
+
+        return 0
+
+    def playPlayer(self):
+
+        if self.remainingPawns != 0:  # If game in placing phase
+            while True:
+                try:
+                    x_pos = int(input("Choose x position: "))
+                    y_pos = int(input("Choose y position: "))
+                except:
+                    print("Sorry, I didn't understand that.")
+                    continue
+
+                if not (0 <= x_pos <= 4 and 0 <= y_pos <= 4):
+                    print("Please select values from 0 to 4.")
+                    continue
+
+                if not self.place(x_pos, y_pos, True):
+                    continue
+                else:
+                    break
+
+        else:  # if game in moving phase
+            while True:
+                try:
+                    x_pos = int(input("Choose x position: "))
+                    y_pos = int(input("Choose y position: "))
+
+                    a_pos = int(input("Choose destination x position: "))
+                    b_pos = int(input("Choose destination y position: "))
+
+                except:
+                    print("Sorry, I didn't understand that.")
+                    continue
+
+                if not (0 <= x_pos <= 4 and 0 <= y_pos <= 4 and 0 <= a_pos <= 4 and 0 <= b_pos <= 4):
+                    print("Please select values from 0 to 4.")
+                    continue
+
+                if not self.move(x_pos, y_pos, a_pos, b_pos, True):
+                    continue
+                else:
+                    break
