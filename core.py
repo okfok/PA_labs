@@ -34,7 +34,7 @@ class BTree(BaseModel):
             for i in x.children:
                 self.printTree(i, lvl)
 
-    def search(self, k, x=None):
+    def search(self, k, x=None) -> tuple | None:
         """
         Search for key 'k' at position 'x'
         :param k: The key to search for.
@@ -50,7 +50,7 @@ class BTree(BaseModel):
             if i < len(x.keys) and k == x.keys[i][0]:
                 return x, i
             elif x.leaf:
-                return None
+                return
             else:
                 # Search its children
                 return self.search(k, x.children[i])
@@ -114,28 +114,29 @@ class BTree(BaseModel):
             z.children = y.children[T: 2 * T]
             y.children = y.children[0: T]
 
-    def delete(self, x, k):
+    def delete(self, k: int, x: Node = None):
         """
         Calls the respective helper functions for deletion from B-Tree
         :param x: The node, according to whose relative position, helper functions are called.
         :param k: The key to be deleted.
         """
+        x = x or self.root
         i = 0
-        while i < len(x.keys) and k[0] > x.keys[i][0]:
+        while i < len(x.keys) and k > x.keys[i][0]:
             i += 1
         # Deleting the key if the node is a leaf
         if x.leaf:
-            if i < len(x.keys) and x.keys[i][0] == k[0]:
+            if i < len(x.keys) and x.keys[i][0] == k:
                 x.keys.pop(i)
                 return
             return
 
         # Calling '_deleteInternalNode' when x is an internal node and contains the key 'k'
-        if i < len(x.keys) and x.keys[i][0] == k[0]:
+        if i < len(x.keys) and x.keys[i][0] == k:
             return self._deleteInternalNode(x, k, i)
         # Recursively calling 'delete' on x's children
         elif len(x.children[i].keys) >= T:
-            self.delete(x.children[i], k)
+            self.delete(k, x.children[i])
         # Ensuring that a child always has atleast 't' keys
         else:
             if i != 0 and i + 2 < len(x.children):
@@ -157,7 +158,7 @@ class BTree(BaseModel):
                 else:
                     self._deleteMerge(x, i, i - 1)
                     i -= 1
-            self.delete(x.children[i], k)
+            self.delete(k, x.children[i])
 
     def _deleteInternalNode(self, x, k, i):
         """
@@ -184,7 +185,7 @@ class BTree(BaseModel):
         # Merging the child, its left sibling and the key 'k'
         else:
             self._deleteMerge(x, i, i + 1)
-            self.delete(x.children[i], k)
+            self.delete(k, x.children[i])
 
     def _deletePredecessor(self, x):
         """
@@ -284,16 +285,13 @@ class BTree(BaseModel):
                 cNode.children.insert(0, lsNode.children.pop())
 
 
-# The main function
-def main():
+def test():
     tree = BTree()
 
     # Insert
     customNo = 10000
     for i in random.sample(range(customNo), customNo):
-        # for i in range(customNo):
         tree.insert((i, f'd{i}'))
-    # B.printTree(B.root)
     print()
 
     for _ in range(15):
@@ -305,4 +303,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    test()
